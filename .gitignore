@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# Node
+node_modules/
+dist/
+
+# Dados locais
+backend/data/
+.env
+
+# IDE
+.vscode/
+.idea/
+*.tsbuildinfo

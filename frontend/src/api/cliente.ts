@@ -74,9 +74,10 @@ async function lerErro(r: Response): Promise<ErroApi> {
   return { codigo: "ERRO", mensagem: `Erro ${r.status}`, detalhes: [] };
 }
 
-export async function api<T>(caminho: string, init: RequestInit = {}, tentarRenovar = true): Promise<T> {
+async function requisitar(caminho: string, init: RequestInit, tentarRenovar: boolean): Promise<Response> {
   const headers = new Headers(init.headers);
   if (accessToken) headers.set("Authorization", `Bearer ${accessToken}`);
+  // FormData: o navegador define o Content-Type com o boundary do multipart.
   if (init.body && !(init.body instanceof FormData) && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
@@ -84,12 +85,35 @@ export async function api<T>(caminho: string, init: RequestInit = {}, tentarReno
   const r = await fetch(`/api/v1${caminho}`, { ...init, headers, credentials: "same-origin" });
 
   if (r.status === 401 && tentarRenovar && !caminho.startsWith("/auth/")) {
-    if (await renovarToken()) return api<T>(caminho, init, false);
+    if (await renovarToken()) return requisitar(caminho, init, false);
     aoPerderSessao?.();
   }
   if (!r.ok) throw new ApiError(r.status, await lerErro(r));
+  return r;
+}
+
+export async function api<T>(caminho: string, init: RequestInit = {}): Promise<T> {
+  const r = await requisitar(caminho, init, true);
   if (r.status === 204) return undefined as T;
   return r.json() as Promise<T>;
+}
+
+/** Download autenticado (RN-15: não existem links públicos para os PDFs). */
+export async function baixarArquivo(caminho: string, nomePadrao: string): Promise<void> {
+  const r = await requisitar(caminho, {}, true);
+  const disposicao = r.headers.get("Content-Disposition") ?? "";
+  const utf8 = /filename\*=UTF-8''([^;]+)/.exec(disposicao)?.[1];
+  const simples = /filename="([^"]+)"/.exec(disposicao)?.[1];
+  const nome = utf8 ? decodeURIComponent(utf8) : (simples ?? nomePadrao);
+
+  const url = URL.createObjectURL(await r.blob());
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = nome;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 10_000);
 }
 
 export async function login(email: string, senha: string): Promise<void> {

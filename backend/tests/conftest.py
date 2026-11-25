@@ -24,6 +24,8 @@ from app.core.security import hash_senha  # noqa: E402
 from app.domain.perfis import Perfil  # noqa: E402
 from app.main import app  # noqa: E402
 from app.models import Usuario  # noqa: E402
+from app.storage import get_armazenamento  # noqa: E402
+from app.storage.disco import ArmazenamentoDisco  # noqa: E402
 
 SENHA = "senha-de-teste"
 _HASH = hash_senha(SENHA)  # Argon2 é lento de propósito: calcula uma vez só.
@@ -64,8 +66,15 @@ def db(engine) -> Iterator[Session]:
 
 
 @pytest.fixture
-def client(db: Session) -> Iterator[TestClient]:
+def armazenamento(tmp_path) -> ArmazenamentoDisco:
+    """Cada teste grava PDFs num diretório temporário próprio."""
+    return ArmazenamentoDisco(tmp_path / "arquivos")
+
+
+@pytest.fixture
+def client(db: Session, armazenamento) -> Iterator[TestClient]:
     app.dependency_overrides[get_db] = lambda: db
+    app.dependency_overrides[get_armazenamento] = lambda: armazenamento
     with TestClient(app) as c:
         yield c
     app.dependency_overrides.clear()

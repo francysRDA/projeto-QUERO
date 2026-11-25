@@ -48,6 +48,7 @@ Itens que o documento não cobre ou em que as seções se contradizem. Para cada
 | L-11 | `arquivos.tamanho_bytes ≤ 10 MB` também vale para ata/CSV gerados. | §10 | Aceitável; se necessário, aplicar o CHECK só quando `inscricao_id IS NOT NULL`. |
 | L-12 | `cpf NOT NULL` pode não vir do SSO e conflita com minimização LGPD. | §10, §13.1 | Tornar `cpf` opcional no protótipo. |
 | L-13 | Upload de **1 PDF por documento exigido** está implícito, não explícito; INS-02 menciona multipart, mas a rota é única. | INS-02, §11 | Uma requisição multipart com um arquivo por `documento_exigido_id`. Streaming via chunks de 64 KB (sem `await file.read()`). |
+| L-15 | **Limite do Nginx × inscrição com vários PDFs**: `client_max_body_size 15m` (RNF-03) recusaria uma inscrição com 2+ PDFs de 10 MB, pois todos vão numa única requisição multipart. | RNF-03, INS-02 | Em produção, usar ~`45m` no Nginx (ou limite = docs × 10 MB + margem). O backend continua cortando cada arquivo em 10 MB. |
 | L-14 | Numeração editorial quebrada (listas começam em 6, 11, 16, 19, 24). | §6.2, §9.2, §14 | Apenas cosmético — corrigir na v5.1. |
 
 ### 1.4 Decisões pendentes (§15) que afetam o protótipo

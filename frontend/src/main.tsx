@@ -8,6 +8,9 @@ import { Layout } from "./components/Layout";
 import "./index.css";
 import { EmConstrucao, Inicio } from "./pages/Inicio";
 import { Login } from "./pages/Login";
+import { EditalInscricao } from "./pages/estudante/EditalInscricao";
+import { MinhasInscricoes } from "./pages/estudante/MinhasInscricoes";
+import { Vitrine } from "./pages/estudante/Vitrine";
 import { MinhasComissoes } from "./pages/avaliador/MinhasComissoes";
 import { DetalheEdital } from "./pages/gestao/DetalheEdital";
 import { FormEdital } from "./pages/gestao/FormEdital";
@@ -26,8 +29,9 @@ createRoot(document.getElementById("root")!).render(
               <Route element={<Layout />}>
                 <Route index element={<Inicio />} />
                 <Route element={<RotaProtegida perfis={["ESTUDANTE"]} />}>
-                  <Route path="editais" element={<EmConstrucao titulo="Editais abertos" fatia={3} />} />
-                  <Route path="minhas-inscricoes" element={<EmConstrucao titulo="Minhas inscrições" fatia={3} />} />
+                  <Route path="editais" element={<Vitrine />} />
+                  <Route path="editais/:id" element={<EditalInscricao />} />
+                  <Route path="minhas-inscricoes" element={<MinhasInscricoes />} />
                 </Route>
                 <Route element={<RotaProtegida perfis={["AVALIADOR"]} />}>
                   <Route path="avaliacoes" element={<MinhasComissoes />} />

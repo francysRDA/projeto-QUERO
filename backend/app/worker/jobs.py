@@ -10,9 +10,11 @@ from sqlalchemy.orm import Session
 from app.core.relogio import agora
 from app.domain.estados import EventoEdital, StatusEdital
 from app.integrations.email import enviar_email
-from app.models import Edital, Notificacao, Tarefa, Usuario
+from app.models import Arquivo, Edital, Notificacao, Tarefa, Usuario
 from app.services import editais as svc_editais
 from app.services.notificacoes import TAREFA_EMAIL
+from app.storage import get_armazenamento
+from app.storage.base import ArmazenamentoArquivos
 
 log = logging.getLogger("quero.worker")
 
@@ -79,7 +81,34 @@ def processar_emails(db: Session, limite: int = 20) -> int:
     return enviados
 
 
+IDADE_MINIMA_ORFAO = timedelta(hours=24)
+INTERVALO_LIMPEZA = timedelta(hours=1)
+_ultima_limpeza: datetime | None = None
+
+
+def limpar_orfaos(db: Session, armazenamento: ArmazenamentoArquivos) -> int:
+    """§9.2 item 23: remove do disco arquivos sem registro em `arquivos` criados há mais de 24 h
+    (uploads interrompidos ou transações desfeitas). Usa o tempo real do sistema de arquivos."""
+    limite = datetime.now(timezone.utc) - IDADE_MINIMA_ORFAO
+    candidatos = [chave for chave, modificado in armazenamento.listar() if modificado < limite]
+    if not candidatos:
+        return 0
+    registradas = set(db.scalars(select(Arquivo.chave).where(Arquivo.chave.in_(candidatos))))
+    removidos = 0
+    for chave in candidatos:
+        if chave not in registradas:
+            armazenamento.delete(chave)
+            removidos += 1
+            log.info("Arquivo órfão removido: %s", chave)
+    return removidos
+
+
 def executar_ciclo(db: Session, *, enviar_emails: bool = True) -> None:
+    global _ultima_limpeza
     transicoes_temporais(db)
     if enviar_emails:
         processar_emails(db)
+        agora_real = datetime.now(timezone.utc)
+        if _ultima_limpeza is None or agora_real - _ultima_limpeza >= INTERVALO_LIMPEZA:
+            limpar_orfaos(db, get_armazenamento())
+            _ultima_limpeza = agora_real

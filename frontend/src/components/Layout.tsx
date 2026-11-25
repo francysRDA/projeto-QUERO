@@ -42,7 +42,7 @@ export function Layout() {
               <NavLink
                 key={item.para}
                 to={item.para}
-                end
+                end={item.para === "/"}
                 className={({ isActive }) =>
                   `rounded px-3 py-1.5 text-sm ${isActive ? "bg-white/20 font-semibold" : "hover:bg-white/10"}`
                 }

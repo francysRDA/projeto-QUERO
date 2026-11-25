@@ -45,6 +45,20 @@ def usuario_atual(
 UsuarioAtual = Annotated[Usuario, Depends(usuario_atual)]
 
 
+def usuario_opcional(
+    db: DB,
+    cred: Annotated[HTTPAuthorizationCredentials | None, Depends(_bearer)],
+) -> Usuario | None:
+    """Para rotas públicas que mostram mais conteúdo a usuários autenticados (ex.: GET /editais).
+    Token presente mas inválido continua sendo erro 401 — não degrada silenciosamente para anônimo."""
+    if cred is None:
+        return None
+    return usuario_atual(db, cred)
+
+
+UsuarioOpcional = Annotated[Usuario | None, Depends(usuario_opcional)]
+
+
 def exigir_perfis(*perfis: Perfil) -> Callable[[Usuario], Usuario]:
     """Uso: `usuario: Annotated[Usuario, Depends(exigir_perfis(Perfil.PRO_REITOR))]`."""
 

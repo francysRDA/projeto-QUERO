@@ -8,6 +8,10 @@ import { Layout } from "./components/Layout";
 import "./index.css";
 import { EmConstrucao, Inicio } from "./pages/Inicio";
 import { Login } from "./pages/Login";
+import { MinhasComissoes } from "./pages/avaliador/MinhasComissoes";
+import { DetalheEdital } from "./pages/gestao/DetalheEdital";
+import { FormEdital } from "./pages/gestao/FormEdital";
+import { ListaEditais } from "./pages/gestao/ListaEditais";
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } } });
 
@@ -26,10 +30,13 @@ createRoot(document.getElementById("root")!).render(
                   <Route path="minhas-inscricoes" element={<EmConstrucao titulo="Minhas inscrições" fatia={3} />} />
                 </Route>
                 <Route element={<RotaProtegida perfis={["AVALIADOR"]} />}>
-                  <Route path="avaliacoes" element={<EmConstrucao titulo="Minhas comissões" fatia={5} />} />
+                  <Route path="avaliacoes" element={<MinhasComissoes />} />
                 </Route>
                 <Route element={<RotaProtegida perfis={["PRO_REITOR"]} />}>
-                  <Route path="gestao/editais" element={<EmConstrucao titulo="Gestão de editais" fatia={2} />} />
+                  <Route path="gestao/editais" element={<ListaEditais />} />
+                  <Route path="gestao/editais/novo" element={<FormEdital />} />
+                  <Route path="gestao/editais/:id" element={<DetalheEdital />} />
+                  <Route path="gestao/editais/:id/editar" element={<FormEdital />} />
                   <Route path="auditoria" element={<EmConstrucao titulo="Auditoria" fatia={7} />} />
                 </Route>
               </Route>

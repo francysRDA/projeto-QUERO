@@ -26,7 +26,9 @@ cd ../frontend && npm install && npm run dev  # SPA em :5173 com proxy /api -> :
 - `app/core/` config, db, erros→HTTP, segurança (Argon2id/JWT), deps de RBAC, auditoria, relógio.
 - `app/domain/` máquinas de estado (`estados.py`) e regras puras (sem banco, sem HTTP).
 - `app/models/` SQLAlchemy. `app/schemas/` Pydantic. `app/services/` casos de uso. `app/routers/` HTTP.
-- `app/storage/`, `app/integrations/`, `app/reports/`, `app/worker/` — a preencher nas próximas fatias.
+- `app/worker/` jobs do worker (`python -m app.worker`): timers do edital e envio de e-mail com retentativa.
+- `app/integrations/` SMTP (e futuramente Sistema Acadêmico). `app/storage/`, `app/reports/` — próximas fatias.
+- `app/routers/dev.py` relógio de demonstração (`/api/v1/dev/relogio/*`), registrado só com ENV=dev/test.
 
 ## Regras inegociáveis
 1. **Regra de negócio no backend**, nunca só no frontend. Guardas de rota no SPA são apenas UX.
@@ -56,7 +58,7 @@ RN-14 auditoria imutável · RN-15 documentos só para titular, comissão design
 ## Status das fatias (PLANO_PROTOTIPO §2.4)
 - [x] Fase 0 — esquema, migrations, máquinas de estado, auditoria imutável
 - [x] Fatia 1 — autenticação local, sessões revogáveis, RBAC, layout por perfil
-- [ ] Fatia 2 — editais e comissão (EDT-01…05)
+- [x] Fatia 2 — editais e comissão (EDT-01…05), worker (timers + e-mail), relógio de demonstração
 - [ ] Fatia 3 — vitrine, inscrição, upload, comprovante (INS-01, 02, 04, 05, 07)
 - [ ] Fatia 4 — homologação formal + Sistema Acadêmico stub (INS-03, INT-01)
 - [ ] Fatia 5 — avaliação e resultado preliminar (AVA-01, 02)

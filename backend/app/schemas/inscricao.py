@@ -40,3 +40,29 @@ class InscricaoSaida(BaseModel):
     arquivos: list[ArquivoSaida]
     pode_retificar: bool
     pode_desistir: bool
+
+
+class InscricaoGestao(BaseModel):
+    """Linha da conferência de inscrições pela Pró-Reitoria (UC-04)."""
+
+    id: int
+    protocolo: str
+    status: StatusInscricao
+    estudante_nome: str
+    estudante_matricula: str | None
+    curso_congelado: str | None
+    cr_congelado: Decimal | None
+    vinculo_ativo_congelado: bool | None
+    motivos_indeferimento: list[str] | None
+    data_submissao_original: datetime
+    reanalisada: bool
+    justificativa_reanalise: str | None
+    pode_reanalisar: bool
+
+
+class DadosAcademicosSaida(BaseModel):
+    matricula: str
+    vinculo_ativo: bool
+    codigo_curso: str
+    nome_curso: str
+    cr: Decimal

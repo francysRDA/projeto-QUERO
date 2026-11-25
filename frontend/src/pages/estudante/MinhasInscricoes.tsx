@@ -77,6 +77,18 @@ function CartaoInscricao({ inscricao: i }: { inscricao: Inscricao }) {
         </div>
       </div>
 
+      {i.status === "PENDENTE_VALIDACAO_VINCULO" && (
+        <p className="mt-3 rounded border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+          O Sistema Acadêmico estava indisponível no envio. Sua inscrição está registrada e o vínculo será validado
+          automaticamente; você receberá uma notificação com o resultado (INT-01).
+        </p>
+      )}
+      {i.curso_congelado && (
+        <p className="mt-2 text-xs text-slate-600">
+          Dados acadêmicos registrados na inscrição: {i.curso_congelado} · CR {Number(i.cr_congelado).toFixed(2)} ·
+          vínculo {i.vinculo_ativo_congelado ? "ativo" : "inativo"}
+        </p>
+      )}
       {i.motivos_indeferimento && i.motivos_indeferimento.length > 0 && (
         <div className="mt-3 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-900">
           <p className="font-semibold">Motivos do indeferimento (RN-05):</p>

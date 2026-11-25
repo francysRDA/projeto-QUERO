@@ -12,7 +12,8 @@ from app.domain.perfis import Perfil
 from app.models import Arquivo, AuditoriaLog, ComissaoEdital, Edital, Inscricao, Notificacao, Tarefa
 from app.storage.disco import ArmazenamentoDisco, ChaveInvalida
 from app.worker.jobs import limpar_orfaos
-from tests.test_editais import URL as URL_EDITAIS, payload
+from tests.fabricas import URL as URL_EDITAIS
+from tests.fabricas import payload
 
 MB = 1024 * 1024
 
@@ -20,32 +21,6 @@ MB = 1024 * 1024
 def pdf(tamanho: int = 2048, marca: bytes = b"") -> bytes:
     corpo = b"%PDF-1.4\n" + marca
     return corpo + b"0" * max(0, tamanho - len(corpo))
-
-
-@pytest.fixture
-def pr(criar_usuario, login):
-    u = criar_usuario(Perfil.PRO_REITOR)
-    return u, login(u)
-
-
-@pytest.fixture
-def edital(client, pr):
-    """Edital ABERTO com 2 documentos obrigatórios e 1 opcional."""
-    docs = [
-        {"nome": "Histórico escolar", "obrigatorio": True},
-        {"nome": "Carta de motivação", "obrigatorio": True},
-        {"nome": "Currículo Lattes", "obrigatorio": False},
-    ]
-    r = client.post(URL_EDITAIS, json=payload(documentos=docs), headers=pr[1])
-    ed = r.json()
-    assert client.post(f"{URL_EDITAIS}/{ed['id']}/publicar", headers=pr[1]).status_code == 200
-    return ed
-
-
-@pytest.fixture
-def estudante(criar_usuario, login):
-    u = criar_usuario(Perfil.ESTUDANTE, matricula=f"M{os.urandom(3).hex()}")
-    return u, login(u)
 
 
 def docs_ids(ed) -> tuple[int, int, int]:

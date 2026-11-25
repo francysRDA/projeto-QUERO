@@ -61,3 +61,37 @@ export function problemaNoArquivo(f: File): string | null {
   if (f.size > LIMITE_BYTES) return "O arquivo excede 10 MB.";
   return null;
 }
+
+// --- Fatia 4: Sistema Acadêmico, conferência e reanálise ---------------------------------------
+export interface DadosAcademicos {
+  matricula: string;
+  vinculo_ativo: boolean;
+  codigo_curso: string;
+  nome_curso: string;
+  cr: string;
+}
+
+export interface InscricaoGestao {
+  id: number;
+  protocolo: string;
+  status: StatusInscricao;
+  estudante_nome: string;
+  estudante_matricula: string | null;
+  curso_congelado: string | null;
+  cr_congelado: string | null;
+  vinculo_ativo_congelado: boolean | null;
+  motivos_indeferimento: string[] | null;
+  data_submissao_original: string;
+  reanalisada: boolean;
+  justificativa_reanalise: string | null;
+  pode_reanalisar: boolean;
+}
+
+export const meusDadosAcademicos = () => api<DadosAcademicos>("/academico/me");
+export const inscricoesDoEdital = (editalId: number) => api<InscricaoGestao[]>(`/editais/${editalId}/inscricoes`);
+export const reanalisar = (inscricaoId: number, justificativa: string) =>
+  api<Inscricao>(`/inscricoes/${inscricaoId}/reanalisar`, { method: "POST", body: JSON.stringify({ justificativa }) });
+
+export const verAcademicoDev = () => api<{ fora_do_ar: boolean }>("/dev/academico");
+export const definirAcademicoDev = (fora_do_ar: boolean) =>
+  api<{ fora_do_ar: boolean }>("/dev/academico", { method: "PUT", body: JSON.stringify({ fora_do_ar }) });

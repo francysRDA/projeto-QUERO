@@ -11,7 +11,9 @@ from app.core.relogio import agora
 from app.domain.estados import EventoEdital, StatusEdital
 from app.integrations.email import enviar_email
 from app.models import Arquivo, Edital, Notificacao, Tarefa, Usuario
+from app.integrations.academico import get_servico_academico
 from app.services import editais as svc_editais
+from app.services.homologacao import reprocessar_pendentes
 from app.services.notificacoes import TAREFA_EMAIL
 from app.storage import get_armazenamento
 from app.storage.base import ArmazenamentoArquivos
@@ -84,6 +86,7 @@ def processar_emails(db: Session, limite: int = 20) -> int:
 IDADE_MINIMA_ORFAO = timedelta(hours=24)
 INTERVALO_LIMPEZA = timedelta(hours=1)
 _ultima_limpeza: datetime | None = None
+_ultimo_reprocessamento: datetime | None = None
 
 
 def limpar_orfaos(db: Session, armazenamento: ArmazenamentoArquivos) -> int:
@@ -103,12 +106,20 @@ def limpar_orfaos(db: Session, armazenamento: ArmazenamentoArquivos) -> int:
     return removidos
 
 
-def executar_ciclo(db: Session, *, enviar_emails: bool = True) -> None:
-    global _ultima_limpeza
+def executar_ciclo(db: Session, *, enviar_emails: bool = True, servico_academico=None) -> None:
+    global _ultima_limpeza, _ultimo_reprocessamento
+    from app.core.config import get_settings
+
+    agora_real = datetime.now(timezone.utc)
+    intervalo = timedelta(seconds=get_settings().reprocessamento_intervalo_s)
+    # INT-01: reprocessa pendentes ANTES dos timers, para que uma inscrição validada a tempo não
+    # expire no mesmo ciclo em que o edital entra em avaliação. Fora do intervalo, só expira.
+    if _ultimo_reprocessamento is None or agora_real - _ultimo_reprocessamento >= intervalo or not enviar_emails:
+        reprocessar_pendentes(db, servico_academico or get_servico_academico())
+        _ultimo_reprocessamento = agora_real
     transicoes_temporais(db)
     if enviar_emails:
         processar_emails(db)
-        agora_real = datetime.now(timezone.utc)
         if _ultima_limpeza is None or agora_real - _ultima_limpeza >= INTERVALO_LIMPEZA:
             limpar_orfaos(db, get_armazenamento())
             _ultima_limpeza = agora_real

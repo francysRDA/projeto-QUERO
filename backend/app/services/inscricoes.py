@@ -1,5 +1,6 @@
 """Casos de uso da inscrição (UC-03: INS-02, INS-04, INS-05, INS-06, INS-07; RN-01…04, RN-15)."""
 
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import datetime
 from typing import BinaryIO
@@ -22,10 +23,14 @@ from app.domain.perfis import Perfil
 from app.models import Arquivo, Edital, Inscricao, Usuario
 from app.schemas.inscricao import ArquivoSaida, EditalDaInscricao, InscricaoSaida
 from app.services import editais as svc_editais
-from app.services.homologacao import motivos_documentais
+from app.integrations.academico import ServicoAcademico
+from app.services.homologacao import consultar_ramo_academico, decidir_submissao, todos_os_motivos
 from app.services.notificacoes import notificar
 from app.storage.base import ArmazenamentoArquivos
 from app.storage.validacao import ArquivoInvalido, receber_pdf
+
+# Ramo acadêmico do gateway AND (§7.5): roda em paralelo ao recebimento dos PDFs.
+_ramo_academico = ThreadPoolExecutor(max_workers=16, thread_name_prefix="ramo-academico")
 
 # INS-07: desistência só antes da publicação do resultado preliminar.
 STATUS_EDITAL_PERMITE_DESISTIR = {
@@ -176,6 +181,7 @@ def submeter(
     estudante: Usuario,
     arquivos: list[ArquivoEnviado],
     armazenamento: ArmazenamentoArquivos,
+    servico_academico: ServicoAcademico,
     ip: str | None,
 ) -> Inscricao:
     edital = _carregar_edital_compartilhado(db, edital_id)
@@ -186,6 +192,9 @@ def submeter(
     if svc_editais.eh_membro_comissao(db, edital.id, estudante.id):
         raise Conflito("Integrante da comissão avaliadora não pode se inscrever no edital (RN-07).")
     _validar_documentos(edital, arquivos, exigir_todos=True)
+
+    # Gateway AND (§7.5), ramo 1: a consulta acadêmica (INT-01) começa agora, em outra thread...
+    ramo_academico = _ramo_academico.submit(consultar_ramo_academico, servico_academico, estudante.matricula)
 
     insc = Inscricao(
         protocolo=f"TMP-{estudante.id}-{edital.id}",
@@ -204,15 +213,14 @@ def submeter(
 
     novos: list[Arquivo] = []
     try:
+        # ...ramo 2: recebimento e verificação estrutural dos PDFs (RN-04) nesta thread.
         novos = _gravar_arquivos(db, insc, arquivos, armazenamento)
         db.add_all(novos)
         db.flush()
 
-        # Homologação formal (INS-03). Fatia 4: + verificação acadêmica e estado PENDENTE.
-        motivos = motivos_documentais(db, edital, insc)
-        evento = EventoInscricao.SUBMETER_INELEGIVEL if motivos else EventoInscricao.SUBMETER_ELEGIVEL
+        # Sincronização dos ramos e decisão da homologação formal (INS-03, RN-02, RN-05).
+        evento = decidir_submissao(db, edital, insc, ramo_academico.result())
         insc.status = MAQUINA_INSCRICAO.proximo(NOVO, evento)
-        insc.motivos_indeferimento = motivos or None
         db.flush()
 
         registrar(db, usuario_id=estudante.id, acao="INSCRICAO_SUBMETER", entidade="inscricao",
@@ -227,7 +235,13 @@ def submeter(
                 f"Protocolo: {insc.protocolo}\n"
                 f"Data/hora: {momento.strftime('%d/%m/%Y %H:%M')} (horário de Brasília)\n"
                 f"Situação: {insc.status}\n\n"
-                "O comprovante em PDF está disponível no painel \"Minhas inscrições\"."
+                + (
+                    "O Sistema Acadêmico está temporariamente indisponível. Sua inscrição foi registrada e o "
+                    "vínculo será validado automaticamente; você será avisado(a) do resultado.\n\n"
+                    if insc.status == StatusInscricao.PENDENTE_VALIDACAO_VINCULO
+                    else ""
+                )
+                + "O comprovante em PDF está disponível no painel \"Minhas inscrições\"."
             ),
         )
         db.commit()
@@ -272,12 +286,13 @@ def retificar(
         db.add_all(novos)
         db.flush()
 
-        # RN-02 / RN-09: protocolo, data original e dados acadêmicos congelados NÃO mudam.
+        # RN-02 / RN-09: protocolo, data original e dados acadêmicos congelados NÃO mudam;
+        # só os arquivos são revalidados, reaplicando as regras sobre os dados congelados.
         if insc.status == StatusInscricao.PENDENTE_VALIDACAO_VINCULO:
             evento = EventoInscricao.RETIFICAR_PENDENTE
             motivos: list[str] = []
         else:
-            motivos = motivos_documentais(db, edital, insc)
+            motivos = todos_os_motivos(db, edital, insc)
             evento = EventoInscricao.RETIFICAR_INVALIDA if motivos else EventoInscricao.RETIFICAR_VALIDA
         insc.status = MAQUINA_INSCRICAO.proximo(insc.status, evento)
         if evento != EventoInscricao.RETIFICAR_PENDENTE:

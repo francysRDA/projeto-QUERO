@@ -174,6 +174,7 @@ class Inscricao(Base):
     motivos_indeferimento: Mapped[list[str] | None] = mapped_column(JSONB)
     vinculo_ativo_congelado: Mapped[bool | None] = mapped_column(Boolean)
     curso_congelado: Mapped[str | None] = mapped_column(String(120))
+    codigo_curso_congelado: Mapped[str | None] = mapped_column(String(40))  # RN-02: revalidar sem nova consulta
     cr_congelado: Mapped[Decimal | None] = mapped_column(Numeric(4, 2))
     data_submissao_original: Mapped[datetime] = mapped_column(TS, server_default=func.now())
     data_ultima_retificacao: Mapped[datetime | None] = mapped_column(TS)

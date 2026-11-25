@@ -7,8 +7,10 @@
 import os
 
 os.environ.setdefault("ENV", "test")
+os.environ.setdefault("ACADEMICO_ESPERA_S", "0")  # sem espera entre retentativas nos testes
 
 from collections.abc import Iterator  # noqa: E402
+from decimal import Decimal  # noqa: E402
 
 import pytest  # noqa: E402
 from alembic import command  # noqa: E402
@@ -23,9 +25,16 @@ from app.core.db import get_db  # noqa: E402
 from app.core.security import hash_senha  # noqa: E402
 from app.domain.perfis import Perfil  # noqa: E402
 from app.main import app  # noqa: E402
+from app.integrations.academico import (  # noqa: E402
+    AcademicoIndisponivel,
+    DadosAcademicos,
+    get_servico_academico,
+)
 from app.models import Usuario  # noqa: E402
 from app.storage import get_armazenamento  # noqa: E402
 from app.storage.disco import ArmazenamentoDisco  # noqa: E402
+from tests.fabricas import URL as URL_EDITAIS  # noqa: E402
+from tests.fabricas import payload  # noqa: E402
 
 SENHA = "senha-de-teste"
 _HASH = hash_senha(SENHA)  # Argon2 é lento de propósito: calcula uma vez só.
@@ -71,10 +80,38 @@ def armazenamento(tmp_path) -> ArmazenamentoDisco:
     return ArmazenamentoDisco(tmp_path / "arquivos")
 
 
+class AcademicoFalso:
+    """Sistema Acadêmico programável para testes (mesmo contrato de ServicoAcademico)."""
+
+    def __init__(self):
+        self.dados: dict[str, DadosAcademicos] = {}
+        self.fora_do_ar = False
+        self.chamadas = 0
+
+    def cadastrar(self, matricula: str, *, curso: str = "MAT", nome_curso: str = "Matemática",
+                  cr: str = "8.00", ativo: bool = True) -> None:
+        self.dados[matricula] = DadosAcademicos(matricula, ativo, curso, nome_curso, Decimal(cr))
+
+    def definir_fora_do_ar(self, valor: bool) -> None:
+        self.fora_do_ar = valor
+
+    def consultar(self, matricula: str) -> DadosAcademicos | None:
+        self.chamadas += 1
+        if self.fora_do_ar:
+            raise AcademicoIndisponivel("fora do ar (teste)")
+        return self.dados.get(matricula)
+
+
 @pytest.fixture
-def client(db: Session, armazenamento) -> Iterator[TestClient]:
+def academico() -> AcademicoFalso:
+    return AcademicoFalso()
+
+
+@pytest.fixture
+def client(db: Session, armazenamento, academico) -> Iterator[TestClient]:
     app.dependency_overrides[get_db] = lambda: db
     app.dependency_overrides[get_armazenamento] = lambda: armazenamento
+    app.dependency_overrides[get_servico_academico] = lambda: academico
     with TestClient(app) as c:
         yield c
     app.dependency_overrides.clear()
@@ -111,3 +148,35 @@ def login(client: TestClient):
         return {"Authorization": f"Bearer {r.json()['access_token']}"}
 
     return _login
+
+
+# --- Fixtures de domínio compartilhadas (editais / inscrições) ----------------------------------------
+@pytest.fixture
+def pr(criar_usuario, login):
+    """Pró-Reitor autenticado: (usuario, headers)."""
+    u = criar_usuario(Perfil.PRO_REITOR)
+    return u, login(u)
+
+
+@pytest.fixture
+def edital(client, pr):
+    """Edital ABERTO com 2 documentos obrigatórios e 1 opcional."""
+    docs = [
+        {"nome": "Histórico escolar", "obrigatorio": True},
+        {"nome": "Carta de motivação", "obrigatorio": True},
+        {"nome": "Currículo Lattes", "obrigatorio": False},
+    ]
+    r = client.post(URL_EDITAIS, json=payload(documentos=docs), headers=pr[1])
+    ed = r.json()
+    assert client.post(f"{URL_EDITAIS}/{ed['id']}/publicar", headers=pr[1]).status_code == 200
+    return ed
+
+
+@pytest.fixture
+def estudante(criar_usuario, login, academico):
+    """Estudante elegível: vínculo ativo, curso MAT (autorizado no edital padrão), CR 8,00."""
+    u = criar_usuario(Perfil.ESTUDANTE, matricula=f"M{os.urandom(3).hex()}")
+    academico.cadastrar(u.matricula)
+    return u, login(u)
+
+

@@ -57,3 +57,8 @@ def registrar_handlers(app: FastAPI) -> None:
             content={"codigo": exc.codigo, "mensagem": exc.mensagem, "detalhes": exc.detalhes},
             headers=headers,
         )
+
+
+class ServicoIndisponivel(ErroDominio):
+    status_code = 503
+    codigo = "SERVICO_INDISPONIVEL"

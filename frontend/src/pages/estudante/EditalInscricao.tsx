@@ -2,7 +2,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { obterEdital } from "../../api/editais";
-import { baixarComprovante, inscrever, minhasInscricoes } from "../../api/inscricoes";
+import { ApiError } from "../../api/cliente";
+import { baixarComprovante, inscrever, meusDadosAcademicos, minhasInscricoes } from "../../api/inscricoes";
 import { CamposDocumentos, arquivosValidos } from "../../components/CamposDocumentos";
 import { Botao, Cartao, ErroApiBox, NOME_CATEGORIA, StatusBadge, fmtDataHora, fmtMoeda } from "../../components/ui";
 
@@ -53,9 +54,10 @@ export function EditalInscricao() {
             </Cartao>
           ) : prazoAberto ? (
             <Cartao titulo="Inscrever-se">
-              <p className="mb-3 text-sm text-slate-600">
-                Anexe os documentos em PDF (até 10 MB cada). Seus dados acadêmicos (vínculo, curso e CR) serão
-                consultados e registrados no momento do envio.
+              <DadosAcademicosCartao cursos={e.cursos.map((c) => c.codigo_curso)} crMinimo={Number(e.cr_minimo)} />
+              <p className="mb-3 mt-4 text-sm text-slate-600">
+                Anexe os documentos em PDF (até 10 MB cada). Seus dados acadêmicos serão registrados no momento do
+                envio e valerão para toda a seleção (RN-02).
               </p>
               <form onSubmit={(ev) => { ev.preventDefault(); enviar.mutate(); }} className="space-y-4">
                 <CamposDocumentos documentos={e.documentos} arquivos={arquivos} aoMudar={setArquivos} />
@@ -90,6 +92,45 @@ export function EditalInscricao() {
           </ul>
         </Cartao>
       </div>
+    </div>
+  );
+}
+
+/** UC-03 passo 7: mostra os dados do Sistema Acadêmico e avisa sobre inelegibilidade antes do envio. */
+function DadosAcademicosCartao({ cursos, crMinimo }: { cursos: string[]; crMinimo: number }) {
+  const dados = useQuery({ queryKey: ["academico", "me"], queryFn: meusDadosAcademicos, retry: false });
+
+  if (dados.isLoading) return <p role="status" className="text-sm text-slate-500">Consultando o Sistema Acadêmico…</p>;
+  if (dados.error) {
+    const indisponivel = dados.error instanceof ApiError && dados.error.status === 503;
+    return (
+      <p role="status" className={`rounded border p-3 text-sm ${indisponivel ? "border-amber-300 bg-amber-50 text-amber-900" : "border-red-300 bg-red-50 text-red-900"}`}>
+        {dados.error.message}
+      </p>
+    );
+  }
+  const d = dados.data!;
+  const avisos = [
+    !d.vinculo_ativo && "Seu vínculo acadêmico consta como inativo.",
+    !cursos.includes(d.codigo_curso) && `Seu curso (${d.nome_curso}) não está entre os autorizados neste edital.`,
+    Number(d.cr) < crMinimo && `Seu CR (${Number(d.cr).toFixed(2)}) é inferior ao mínimo exigido (${crMinimo.toFixed(2)}).`,
+  ].filter(Boolean) as string[];
+
+  return (
+    <div className="rounded border border-slate-200 bg-slate-50 p-3 text-sm">
+      <p className="font-semibold">Seus dados no Sistema Acadêmico</p>
+      <dl className="mt-1 grid grid-cols-2 gap-x-4 sm:grid-cols-4">
+        <div><dt className="text-xs text-slate-500">Matrícula</dt><dd>{d.matricula}</dd></div>
+        <div><dt className="text-xs text-slate-500">Curso</dt><dd>{d.nome_curso}</dd></div>
+        <div><dt className="text-xs text-slate-500">Vínculo</dt><dd>{d.vinculo_ativo ? "Ativo" : "Inativo"}</dd></div>
+        <div><dt className="text-xs text-slate-500">CR</dt><dd>{Number(d.cr).toFixed(2)}</dd></div>
+      </dl>
+      {avisos.length > 0 && (
+        <div role="alert" className="mt-2 rounded border border-red-300 bg-red-50 p-2 text-red-900">
+          <p className="font-medium">Atenção: com estes dados sua inscrição será indeferida.</p>
+          <ul className="list-disc pl-5">{avisos.map((a) => <li key={a}>{a}</li>)}</ul>
+        </div>
+      )}
     </div>
   );
 }

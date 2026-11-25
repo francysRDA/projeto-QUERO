@@ -13,6 +13,7 @@ import {
   type Edital,
 } from "../../api/editais";
 import { RelogioDemo } from "../../components/RelogioDemo";
+import { InscricoesEdital } from "./InscricoesEdital";
 import {
   Botao,
   Cartao,
@@ -132,6 +133,8 @@ export function DetalheEdital() {
           <p className="mt-1 whitespace-pre-line text-sm text-slate-700">{e.descricao}</p>
         </Cartao>
       </div>
+
+      {e.status !== "RASCUNHO" && <InscricoesEdital editalId={e.id} />}
 
       <Comissao edital={e} />
     </div>

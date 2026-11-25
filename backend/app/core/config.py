@@ -25,6 +25,14 @@ class Settings(BaseSettings):
 
     fuso: str = "America/Sao_Paulo"
 
+    # Sistema Acadêmico (INT-01). Simulado por CSV enquanto a TI não confirma a API (DP-03).
+    academico_csv: str = "./seed/academico.csv"
+    academico_flag_fora_do_ar: str = "./data/academico_fora_do_ar"
+    academico_tentativas: int = 3
+    academico_timeout_s: float = 5.0
+    academico_espera_s: float = 0.5
+    reprocessamento_intervalo_s: int = 60
+
     @property
     def tz(self) -> ZoneInfo:
         return ZoneInfo(self.fuso)

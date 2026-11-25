@@ -26,12 +26,19 @@ cd ../frontend && npm install && npm run dev  # SPA em :5173 com proxy /api -> :
 - `app/core/` config, db, erros→HTTP, segurança (Argon2id/JWT), deps de RBAC, auditoria, relógio.
 - `app/domain/` máquinas de estado (`estados.py`) e regras puras (sem banco, sem HTTP).
 - `app/models/` SQLAlchemy. `app/schemas/` Pydantic. `app/services/` casos de uso. `app/routers/` HTTP.
-- `app/worker/` jobs do worker (`python -m app.worker`): timers do edital e envio de e-mail com retentativa.
-- `app/integrations/` SMTP (e futuramente Sistema Acadêmico).
+- `app/worker/` jobs do worker (`python -m app.worker`): timers do edital, e-mail com retentativa,
+  reprocessamento de inscrições pendentes (INT-01) e limpeza de arquivos órfãos.
+- `app/integrations/` SMTP e `academico.py`: interface `ServicoAcademico`, adapter simulado por CSV
+  (`seed/academico.csv`, separador `;`) e política INT-01 (timeout 5 s × 3 tentativas). Nos testes, a fixture
+  `academico` (`AcademicoFalso` no conftest) substitui o serviço: use `academico.cadastrar(matricula, cr=...)`.
+- `app/services/homologacao.py` homologação formal: ramo acadêmico em paralelo aos PDFs (gateway AND), dados
+  congelados (RN-02), reprocessamento e reanálise (RN-05). Regra pura em `app/domain/elegibilidade.py`.
 - `app/storage/` `ArmazenamentoArquivos` (put/get/delete/listar por chave), `ArmazenamentoDisco` e `validacao.receber_pdf`
   (64 KB por bloco, %PDF-, 10 MB, SHA-256). Nos testes, a fixture `armazenamento` usa um diretório temporário.
 - `app/reports/` PDFs gerados (comprovante de inscrição; ata na Fatia 7).
-- `app/routers/dev.py` relógio de demonstração (`/api/v1/dev/relogio/*`), registrado só com ENV=dev/test.
+- `app/routers/dev.py` ferramentas de demonstração, registradas só com ENV=dev/test: relógio
+  (`/api/v1/dev/relogio/*`) e queda simulada do Sistema Acadêmico (`PUT /api/v1/dev/academico`; o estado fica no
+  arquivo `data/academico_fora_do_ar`, compartilhado entre API e worker).
 
 ## Regras inegociáveis
 1. **Regra de negócio no backend**, nunca só no frontend. Guardas de rota no SPA são apenas UX.
@@ -63,8 +70,8 @@ RN-14 auditoria imutável · RN-15 documentos só para titular, comissão design
 - [x] Fatia 1 — autenticação local, sessões revogáveis, RBAC, layout por perfil
 - [x] Fatia 2 — editais e comissão (EDT-01…05), worker (timers + e-mail), relógio de demonstração
 - [x] Fatia 3 — vitrine, inscrição com upload streaming, comprovante, retificação, desistência, download protegido
-  (homologação ainda só DOCUMENTAL — a parte acadêmica entra na Fatia 4 em `services/homologacao.py`)
-- [ ] Fatia 4 — homologação formal + Sistema Acadêmico stub (INS-03, INT-01)
+- [x] Fatia 4 — homologação formal completa (documental + acadêmica), Sistema Acadêmico simulado, pendentes
+  reprocessadas pelo worker, reanálise pelo PR e conferência das inscrições do edital
 - [ ] Fatia 5 — avaliação e resultado preliminar (AVA-01, 02)
 - [ ] Fatia 6 — recursos (AVA-03, 04)
 - [ ] Fatia 7 — homologação final, ata, notificações, auditoria (HOM-01, 02, TRV-01, 03)

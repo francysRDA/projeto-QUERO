@@ -17,7 +17,7 @@ from app.integrations.academico import (
 from app.models import AuditoriaLog, Edital, Inscricao, Notificacao
 from app.services.homologacao import MOTIVO_EXPIRADO, reprocessar_pendentes
 from tests.fabricas import URL as URL_EDITAIS
-from tests.test_inscricoes import arquivos_form, avancar_relogio, docs_ids, inscrever, pdf
+from tests.fabricas import arquivos_form, avancar_relogio, docs_ids, inscrever, pdf
 
 D = Decimal
 

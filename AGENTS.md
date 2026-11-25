@@ -77,5 +77,7 @@ RN-14 auditoria imutável · RN-15 documentos só para titular, comissão design
 - [x] Fatia 5 — fila do avaliador, nota/parecer (rascunho → confirmada → retificada), impedimento com
   redirecionamento, classificação preliminar e abertura automática do recurso.
   ⚠ `app/domain/classificacao.py` + `tests/test_classificacao.py` aguardam a revisão humana do §14 item 28(c).
-- [ ] Fatia 6 — recursos (AVA-03, 04)
+- [x] Fatia 6 — interposição única na janela (com anexo PDF), julgamento com bloqueio do autor do parecer
+  (RN-11) ou justificativa reforçada em comissão única, reavaliação e classificação POS_RECURSO, passagem
+  automática para EM_HOMOLOGACAO_FINAL (`services/recursos.py`)
 - [ ] Fatia 7 — homologação final, ata, notificações, auditoria (HOM-01, 02, TRV-01, 03)

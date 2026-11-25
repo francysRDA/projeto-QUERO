@@ -55,6 +55,21 @@ class InscricaoSaida(BaseModel):
     pode_retificar: bool
     pode_desistir: bool
     resultado: ResultadoCandidato | None = None  # INS-06: só após a publicação do resultado preliminar
+    recurso: "RecursoResumo | None" = None
+    pode_recorrer: bool = False  # AVA-03: o botão só aparece dentro da janela
+
+
+class RecursoResumo(BaseModel):
+    id: int
+    texto: str
+    status: str
+    justificativa_decisao: str | None
+    criado_em: datetime
+    julgado_em: datetime | None
+    anexo_id: int | None
+
+
+InscricaoSaida.model_rebuild()
 
 
 class InscricaoGestao(BaseModel):

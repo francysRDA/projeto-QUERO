@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { obterClassificacao, progressoAvaliacao, publicarPreliminar } from "../../api/avaliacoes";
 import type { Edital } from "../../api/editais";
+import { PainelRecursosEdital } from "../../components/PainelRecursos";
 import { BarraProgresso, TabelaClassificacao } from "../../components/TabelaClassificacao";
 import { Botao, Cartao, ErroApiBox, fmtDataHora } from "../../components/ui";
 
@@ -40,6 +41,9 @@ export function AvaliacaoEdital({ edital }: { edital: Edital }) {
       )}
       <div className="mt-2"><ErroApiBox erro={publicar.error ?? prog.error} /></div>
       {classif.data && <div className="mt-4"><TabelaClassificacao dados={classif.data} /></div>}
+      {["EM_RECURSO", "EM_HOMOLOGACAO_FINAL", "ENCERRADO"].includes(edital.status) && (
+        <div className="mt-4"><PainelRecursosEdital editalId={edital.id} /></div>
+      )}
     </Cartao>
   );
 }

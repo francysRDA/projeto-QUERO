@@ -12,6 +12,7 @@ import {
   type StatusInscricao,
 } from "../../api/inscricoes";
 import { CamposDocumentos, arquivosValidos } from "../../components/CamposDocumentos";
+import { RecursoDoEstudante } from "../../components/FormRecurso";
 import { COR_SITUACAO, NOME_SITUACAO } from "../../components/TabelaClassificacao";
 import { Botao, Cartao, ErroApiBox, StatusBadge, fmtDataHora } from "../../components/ui";
 
@@ -93,6 +94,7 @@ function CartaoInscricao({ inscricao: i }: { inscricao: Inscricao }) {
           {i.resultado.justificativa && <p className="mt-1 text-slate-700">Parecer: {i.resultado.justificativa}</p>}
         </div>
       )}
+      <RecursoDoEstudante inscricao={i} />
       {i.status === "PENDENTE_VALIDACAO_VINCULO" && (
         <p className="mt-3 rounded border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
           O Sistema Acadêmico estava indisponível no envio. Sua inscrição está registrada e o vínculo será validado

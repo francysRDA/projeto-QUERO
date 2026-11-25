@@ -24,7 +24,7 @@ MAX_TENTATIVAS_EMAIL = 5
 
 
 def transicoes_temporais(db: Session) -> int:
-    """§7.5 timers (1) fechamento das inscrições e (2) início da avaliação."""
+    """§7.5 timers: (1) fechamento das inscrições, (2) início da avaliação, (3) fim da janela de recurso."""
     momento = agora(db)
     regras = [
         (StatusEdital.ABERTO, Edital.data_fim_inscricao, EventoEdital.ENCERRAR_INSCRICOES),
@@ -43,6 +43,20 @@ def transicoes_temporais(db: Session) -> int:
             log.info("Edital %s: %s -> %s", edital.id, status, edital.status)
             total += 1
         db.commit()
+
+    # (3) Encerramento da janela de recurso (RN-10): EM_RECURSO -> EM_HOMOLOGACAO_FINAL quando todos
+    # os recursos estiverem julgados. Se ainda houver recurso pendente, o edital aguarda o julgamento.
+    from app.services.recursos import encerrar_se_concluido
+
+    for edital in db.scalars(
+        select(Edital)
+        .where(Edital.status == StatusEdital.EM_RECURSO, Edital.data_fim_recurso <= momento)
+        .with_for_update(skip_locked=True)
+    ).all():
+        if encerrar_se_concluido(db, edital):
+            log.info("Edital %s: fase de recurso encerrada", edital.id)
+            total += 1
+    db.commit()
     return total
 
 

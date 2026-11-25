@@ -1,53 +1,27 @@
 """Fatia 3 — INS-02, INS-04, INS-05, INS-06, INS-07, RN-01, RN-03, RN-04, RN-15 e armazenamento (§9.2)."""
 
 import hashlib
-import io
 import os
 from datetime import datetime, timedelta, timezone
 
 import pytest
-from sqlalchemy import select, text
+from sqlalchemy import select
 
 from app.domain.perfis import Perfil
 from app.models import Arquivo, AuditoriaLog, ComissaoEdital, Edital, Inscricao, Notificacao, Tarefa
-from app.storage.disco import ArmazenamentoDisco, ChaveInvalida
+from app.storage.disco import ChaveInvalida
 from app.worker.jobs import limpar_orfaos
-from tests.fabricas import URL as URL_EDITAIS
-from tests.fabricas import payload
-
-MB = 1024 * 1024
-
-
-def pdf(tamanho: int = 2048, marca: bytes = b"") -> bytes:
-    corpo = b"%PDF-1.4\n" + marca
-    return corpo + b"0" * max(0, tamanho - len(corpo))
-
-
-def docs_ids(ed) -> tuple[int, int, int]:
-    return tuple(d["id"] for d in ed["documentos"])  # type: ignore[return-value]
-
-
-def arquivos_form(*pares) -> list:
-    """pares: (documento_id, conteudo, nome_arquivo[, content_type])"""
-    return [
-        (f"doc_{doc}", (nome, io.BytesIO(conteudo), ct[0] if ct else "application/pdf"))
-        for doc, conteudo, nome, *ct in pares
-    ]
-
-
-def inscrever(client, ed, headers, *pares):
-    h, c = docs_ids(ed)[:2]
-    pares = pares or ((h, pdf(marca=b"hist"), "historico.pdf"), (c, pdf(marca=b"carta"), "carta.pdf"))
-    return client.post(f"{URL_EDITAIS}/{ed['id']}/inscricoes", headers=headers, files=arquivos_form(*pares))
-
-
-def avancar_relogio(db, horas: float):
-    db.execute(text("UPDATE relogio_dev SET segundos = segundos + :s WHERE id = 1"), {"s": int(horas * 3600)})
-
-
-def arquivos_no_disco(armazenamento: ArmazenamentoDisco) -> list[str]:
-    return [c for c, _ in armazenamento.listar()]
-
+from tests.fabricas import (
+    MB,
+    URL as URL_EDITAIS,
+    arquivos_form,
+    arquivos_no_disco,
+    avancar_relogio,
+    docs_ids,
+    inscrever,
+    payload,
+    pdf,
+)
 
 # === INS-02 / INS-03 / RN-04: submissão ==================================================================
 def test_INS02_inscricao_completa(client, db, edital, estudante, armazenamento):

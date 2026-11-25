@@ -11,6 +11,7 @@ import {
   type Parecer,
 } from "../../api/avaliacoes";
 import { baixarDocumento } from "../../api/inscricoes";
+import { PainelRecursosEdital } from "../../components/PainelRecursos";
 import { BarraProgresso, TabelaClassificacao } from "../../components/TabelaClassificacao";
 import { Botao, Cartao, ErroApiBox, StatusBadge, classeInput, fmtDataHora } from "../../components/ui";
 
@@ -104,6 +105,8 @@ export function FilaAvaliacao() {
           )}
         </div>
       </div>
+
+      {["EM_RECURSO", "EM_HOMOLOGACAO_FINAL", "ENCERRADO"].includes(f.edital_status) && <PainelRecursosEdital editalId={editalId} />}
 
       {classif.data && (
         <Cartao titulo="Classificação">

@@ -29,6 +29,8 @@ export interface Inscricao {
   pode_retificar: boolean;
   pode_desistir: boolean;
   resultado: ResultadoCandidato | null;
+  recurso: { id: number; texto: string; status: string; justificativa_decisao: string | null; criado_em: string; julgado_em: string | null; anexo_id: number | null } | null;
+  pode_recorrer: boolean;
 }
 
 export interface ResultadoCandidato {

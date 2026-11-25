@@ -1,6 +1,5 @@
 """Fatia 5 — AVA-01, AVA-02, RN-06…09, RN-12, INS-06 (visibilidade do resultado)."""
 
-import os
 from datetime import timedelta
 
 import pytest
@@ -9,41 +8,9 @@ from sqlalchemy import select
 from app.core.relogio import agora
 from app.domain.perfis import Perfil
 from app.models import AuditoriaLog, Classificacao, Edital, Inscricao, Notificacao
-from app.worker.jobs import transicoes_temporais
 from tests.fabricas import URL as URL_EDITAIS
-from tests.test_inscricoes import avancar_relogio, inscrever
 
-URL_INSC = "/api/v1/inscricoes"
-
-
-@pytest.fixture
-def cenario(client, db, criar_usuario, login, academico, edital, pr):
-    """Edital com vagas=2, comissão de 2 avaliadores e 3 candidatos homologados + 1 indeferido + 1 desistente,
-    já EM_AVALIACAO."""
-    db.get(Edital, edital["id"]).vagas = 2
-    db.flush()
-    a1, a2 = criar_usuario(Perfil.AVALIADOR, nome="Avaliador Um"), criar_usuario(Perfil.AVALIADOR, nome="Avaliador Dois")
-    client.post(f"{URL_EDITAIS}/{edital['id']}/comissao", headers=pr[1], json={"avaliador_ids": [a1.id, a2.id]})
-
-    def estudante(nome: str, cr: str):
-        u = criar_usuario(Perfil.ESTUDANTE, nome=nome, matricula=f"M{os.urandom(3).hex()}")
-        academico.cadastrar(u.matricula, cr=cr)
-        h = login(u)
-        return u, h, inscrever(client, edital, h).json()
-
-    cands = {
-        "ana": estudante("Ana", "8.00"),
-        "bia": estudante("Bia", "9.00"),
-        "caio": estudante("Caio", "7.50"),
-        "dani": estudante("Dani", "5.00"),  # indeferida na homologação (CR < 7)
-        "edu": estudante("Edu", "8.00"),
-    }
-    client.post(f"{URL_INSC}/{cands['edu'][2]['id']}/desistir", headers=cands["edu"][1])
-
-    avancar_relogio(db, 24 * 8 + 1)
-    transicoes_temporais(db)
-    assert db.get(Edital, edital["id"]).status == "EM_AVALIACAO"
-    return {"edital": edital, "a1": (a1, login(a1)), "a2": (a2, login(a2)), "cands": cands}
+from tests.fabricas import URL_INSC
 
 
 def iid(cenario, nome):

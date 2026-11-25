@@ -20,8 +20,8 @@ from app.domain.estados import (
     StatusInscricao,
 )
 from app.domain.perfis import Perfil
-from app.models import Arquivo, Avaliacao, Classificacao, Edital, Inscricao, Usuario
-from app.schemas.inscricao import ArquivoSaida, EditalDaInscricao, InscricaoSaida, ResultadoCandidato
+from app.models import Arquivo, Avaliacao, Classificacao, Edital, Inscricao, Recurso, Usuario
+from app.schemas.inscricao import ArquivoSaida, EditalDaInscricao, InscricaoSaida, RecursoResumo, ResultadoCandidato
 from app.services import editais as svc_editais
 from app.integrations.academico import ServicoAcademico
 from app.services.homologacao import consultar_ramo_academico, decidir_submissao, todos_os_motivos
@@ -369,7 +369,23 @@ def montar_saida(db: Session, insc: Inscricao, usuario: Usuario) -> InscricaoSai
         pode_retificar=titular and ativa and janela,
         pode_desistir=titular and ativa and edital.status in STATUS_EDITAL_PERMITE_DESISTIR,
         resultado=_resultado(db, edital, insc),
+        recurso=_recurso(db, insc),
+        pode_recorrer=titular and _pode_recorrer(db, edital, insc),
     )
+
+
+def _recurso(db: Session, insc: Inscricao) -> RecursoResumo | None:
+    r = db.scalar(select(Recurso).where(Recurso.inscricao_id == insc.id))
+    if r is None:
+        return None
+    return RecursoResumo(id=r.id, texto=r.texto, status=r.status, justificativa_decisao=r.justificativa_decisao,
+                         criado_em=r.criado_em, julgado_em=r.julgado_em, anexo_id=r.arquivo_anexo_id)
+
+
+def _pode_recorrer(db: Session, edital: Edital, insc: Inscricao) -> bool:
+    from app.services.recursos import pode_recorrer
+
+    return pode_recorrer(db, edital, insc)
 
 
 def _resultado(db: Session, edital: Edital, insc: Inscricao) -> ResultadoCandidato | None:

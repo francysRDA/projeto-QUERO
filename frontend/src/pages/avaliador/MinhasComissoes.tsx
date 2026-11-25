@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 import { editaisDesignados } from "../../api/editais";
 import { Cartao, ErroApiBox, NOME_CATEGORIA, StatusBadge, fmtDataHora } from "../../components/ui";
 
@@ -26,6 +27,11 @@ export function MinhasComissoes() {
             <p className="mt-1 text-sm text-slate-600">
               {NOME_CATEGORIA[e.categoria]} · {e.vagas} vaga(s) · inscrições até {fmtDataHora(e.data_fim_inscricao)}
             </p>
+            {e.status !== "ABERTO" && e.status !== "CANCELADO" && (
+              <Link to={`/avaliacoes/${e.id}`} className="mt-3 inline-block rounded bg-marca-700 px-3 py-1.5 text-sm font-medium text-white">
+                {e.status === "EM_AVALIACAO" ? "Avaliar candidaturas" : "Ver avaliação e classificação"}
+              </Link>
+            )}
           </Cartao>
         ))}
       </div>

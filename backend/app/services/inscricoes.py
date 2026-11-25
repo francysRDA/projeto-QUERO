@@ -20,8 +20,8 @@ from app.domain.estados import (
     StatusInscricao,
 )
 from app.domain.perfis import Perfil
-from app.models import Arquivo, Edital, Inscricao, Usuario
-from app.schemas.inscricao import ArquivoSaida, EditalDaInscricao, InscricaoSaida
+from app.models import Arquivo, Avaliacao, Classificacao, Edital, Inscricao, Usuario
+from app.schemas.inscricao import ArquivoSaida, EditalDaInscricao, InscricaoSaida, ResultadoCandidato
 from app.services import editais as svc_editais
 from app.integrations.academico import ServicoAcademico
 from app.services.homologacao import consultar_ramo_academico, decidir_submissao, todos_os_motivos
@@ -368,7 +368,26 @@ def montar_saida(db: Session, insc: Inscricao, usuario: Usuario) -> InscricaoSai
         arquivos=[ArquivoSaida.model_validate(a) for a in db.scalars(stmt)],
         pode_retificar=titular and ativa and janela,
         pode_desistir=titular and ativa and edital.status in STATUS_EDITAL_PERMITE_DESISTIR,
+        resultado=_resultado(db, edital, insc),
     )
+
+
+def _resultado(db: Session, edital: Edital, insc: Inscricao) -> ResultadoCandidato | None:
+    """INS-06: nota e classificação só aparecem após a publicação do resultado preliminar."""
+    from app.services.avaliacoes import STATUS_RESULTADO_PUBLICADO
+
+    if edital.status not in STATUS_RESULTADO_PUBLICADO:
+        return None
+    for fase in ("FINAL", "POS_RECURSO", "PRELIMINAR"):
+        c = db.scalar(select(Classificacao).where(Classificacao.inscricao_id == insc.id, Classificacao.fase == fase))
+        if c is not None:
+            av = db.scalar(select(Avaliacao).where(Avaliacao.inscricao_id == insc.id))
+            return ResultadoCandidato(
+                fase=fase, nota=c.nota, parecer=av.parecer if av else None,
+                justificativa=av.justificativa if av else None, posicao=c.posicao, situacao=c.situacao,
+                total_vagas=edital.vagas,
+            )
+    return None
 
 
 def minhas(db: Session, estudante: Usuario) -> list[Inscricao]:

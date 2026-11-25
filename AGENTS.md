@@ -33,6 +33,8 @@ cd ../frontend && npm install && npm run dev  # SPA em :5173 com proxy /api -> :
   `academico` (`AcademicoFalso` no conftest) substitui o serviço: use `academico.cadastrar(matricula, cr=...)`.
 - `app/services/homologacao.py` homologação formal: ramo acadêmico em paralelo aos PDFs (gateway AND), dados
   congelados (RN-02), reprocessamento e reanálise (RN-05). Regra pura em `app/domain/elegibilidade.py`.
+- `app/services/avaliacoes.py` fila, avaliação (§7.3), impedimento e publicação do preliminar. A ordenação
+  (RN-09/RN-12) é a função pura `app/domain/classificacao.classificar` — nunca reimplemente em outro lugar.
 - `app/storage/` `ArmazenamentoArquivos` (put/get/delete/listar por chave), `ArmazenamentoDisco` e `validacao.receber_pdf`
   (64 KB por bloco, %PDF-, 10 MB, SHA-256). Nos testes, a fixture `armazenamento` usa um diretório temporário.
 - `app/reports/` PDFs gerados (comprovante de inscrição; ata na Fatia 7).
@@ -72,6 +74,8 @@ RN-14 auditoria imutável · RN-15 documentos só para titular, comissão design
 - [x] Fatia 3 — vitrine, inscrição com upload streaming, comprovante, retificação, desistência, download protegido
 - [x] Fatia 4 — homologação formal completa (documental + acadêmica), Sistema Acadêmico simulado, pendentes
   reprocessadas pelo worker, reanálise pelo PR e conferência das inscrições do edital
-- [ ] Fatia 5 — avaliação e resultado preliminar (AVA-01, 02)
+- [x] Fatia 5 — fila do avaliador, nota/parecer (rascunho → confirmada → retificada), impedimento com
+  redirecionamento, classificação preliminar e abertura automática do recurso.
+  ⚠ `app/domain/classificacao.py` + `tests/test_classificacao.py` aguardam a revisão humana do §14 item 28(c).
 - [ ] Fatia 6 — recursos (AVA-03, 04)
 - [ ] Fatia 7 — homologação final, ata, notificações, auditoria (HOM-01, 02, TRV-01, 03)

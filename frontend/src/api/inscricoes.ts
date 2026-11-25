@@ -28,6 +28,17 @@ export interface Inscricao {
   arquivos: ArquivoInscricao[];
   pode_retificar: boolean;
   pode_desistir: boolean;
+  resultado: ResultadoCandidato | null;
+}
+
+export interface ResultadoCandidato {
+  fase: "PRELIMINAR" | "POS_RECURSO" | "FINAL";
+  nota: string | null;
+  parecer: "DEFERIDO" | "INDEFERIDO" | null;
+  justificativa: string | null;
+  posicao: number | null;
+  situacao: "CONTEMPLADO" | "SUPLENTE" | "NAO_CLASSIFICADO";
+  total_vagas: number;
 }
 
 /** arquivos: documento_exigido_id -> File */

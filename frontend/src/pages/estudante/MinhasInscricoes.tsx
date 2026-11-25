@@ -12,6 +12,7 @@ import {
   type StatusInscricao,
 } from "../../api/inscricoes";
 import { CamposDocumentos, arquivosValidos } from "../../components/CamposDocumentos";
+import { COR_SITUACAO, NOME_SITUACAO } from "../../components/TabelaClassificacao";
 import { Botao, Cartao, ErroApiBox, StatusBadge, fmtDataHora } from "../../components/ui";
 
 const SITUACAO: Record<StatusInscricao, { rotulo: string; cor: string }> = {
@@ -77,6 +78,21 @@ function CartaoInscricao({ inscricao: i }: { inscricao: Inscricao }) {
         </div>
       </div>
 
+      {i.resultado && (
+        <div className="mt-3 rounded border border-marca-100 bg-marca-50 p-3 text-sm">
+          <p className="font-semibold">
+            {i.resultado.fase === "FINAL" ? "Resultado final" : i.resultado.fase === "POS_RECURSO" ? "Resultado após recursos" : "Resultado preliminar"}
+          </p>
+          <div className="mt-1 flex flex-wrap items-center gap-3">
+            <span>Nota: <strong>{i.resultado.nota !== null ? Number(i.resultado.nota).toFixed(2) : "—"}</strong></span>
+            {i.resultado.posicao && <span>Posição: <strong>{i.resultado.posicao}º</strong> ({i.resultado.total_vagas} vaga(s))</span>}
+            <span className={`rounded border px-2 py-0.5 text-xs font-medium ${COR_SITUACAO[i.resultado.situacao]}`}>
+              {NOME_SITUACAO[i.resultado.situacao]}
+            </span>
+          </div>
+          {i.resultado.justificativa && <p className="mt-1 text-slate-700">Parecer: {i.resultado.justificativa}</p>}
+        </div>
+      )}
       {i.status === "PENDENTE_VALIDACAO_VINCULO" && (
         <p className="mt-3 rounded border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
           O Sistema Acadêmico estava indisponível no envio. Sua inscrição está registrada e o vínculo será validado

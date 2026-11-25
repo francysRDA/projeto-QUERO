@@ -11,6 +11,7 @@ import { Login } from "./pages/Login";
 import { EditalInscricao } from "./pages/estudante/EditalInscricao";
 import { MinhasInscricoes } from "./pages/estudante/MinhasInscricoes";
 import { Vitrine } from "./pages/estudante/Vitrine";
+import { FilaAvaliacao } from "./pages/avaliador/FilaAvaliacao";
 import { MinhasComissoes } from "./pages/avaliador/MinhasComissoes";
 import { DetalheEdital } from "./pages/gestao/DetalheEdital";
 import { FormEdital } from "./pages/gestao/FormEdital";
@@ -35,6 +36,7 @@ createRoot(document.getElementById("root")!).render(
                 </Route>
                 <Route element={<RotaProtegida perfis={["AVALIADOR"]} />}>
                   <Route path="avaliacoes" element={<MinhasComissoes />} />
+                  <Route path="avaliacoes/:editalId" element={<FilaAvaliacao />} />
                 </Route>
                 <Route element={<RotaProtegida perfis={["PRO_REITOR"]} />}>
                   <Route path="gestao/editais" element={<ListaEditais />} />

@@ -2,11 +2,11 @@ from fastapi import FastAPI
 
 from app.core.config import get_settings
 from app.core.errors import registrar_handlers
-from app.routers import academico, auth, editais, inscricoes, usuarios
+from app.routers import academico, auth, avaliacoes, editais, inscricoes, usuarios
 
 app = FastAPI(
     title="QUERO API",
-    version="0.4.0",
+    version="0.5.0",
     description="Quadro Universitário de Estágios Remunerados e Oportunidades — API do protótipo.",
 )
 registrar_handlers(app)
@@ -17,6 +17,7 @@ app.include_router(editais.router, prefix=API)
 app.include_router(inscricoes.router, prefix=API)
 app.include_router(usuarios.router, prefix=API)
 app.include_router(academico.router, prefix=API)
+app.include_router(avaliacoes.router, prefix=API)
 
 if get_settings().is_dev:
     from app.routers import dev

@@ -1,6 +1,8 @@
 from datetime import datetime
 from decimal import Decimal
 
+from typing import Literal
+
 from pydantic import BaseModel, ConfigDict
 
 from app.domain.estados import StatusEdital, StatusInscricao
@@ -26,6 +28,18 @@ class EditalDaInscricao(BaseModel):
     data_fim_inscricao: datetime
 
 
+class ResultadoCandidato(BaseModel):
+    """O que o estudante vê da própria avaliação — só após a publicação (INS-06)."""
+
+    fase: Literal["PRELIMINAR", "POS_RECURSO", "FINAL"]
+    nota: Decimal | None
+    parecer: Literal["DEFERIDO", "INDEFERIDO"] | None
+    justificativa: str | None
+    posicao: int | None
+    situacao: Literal["CONTEMPLADO", "SUPLENTE", "NAO_CLASSIFICADO"]
+    total_vagas: int
+
+
 class InscricaoSaida(BaseModel):
     id: int
     protocolo: str
@@ -40,6 +54,7 @@ class InscricaoSaida(BaseModel):
     arquivos: list[ArquivoSaida]
     pode_retificar: bool
     pode_desistir: bool
+    resultado: ResultadoCandidato | None = None  # INS-06: só após a publicação do resultado preliminar
 
 
 class InscricaoGestao(BaseModel):

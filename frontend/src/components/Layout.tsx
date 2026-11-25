@@ -1,6 +1,7 @@
 import { NavLink, Outlet } from "react-router-dom";
 import type { Perfil } from "../api/cliente";
 import { useAuth } from "../auth/AuthContext";
+import { SinoNotificacoes } from "./Notificacoes";
 
 const NOMES_PERFIL: Record<Perfil, string> = {
   ESTUDANTE: "Estudante",
@@ -52,6 +53,7 @@ export function Layout() {
             ))}
           </nav>
           <div className="ml-auto flex items-center gap-3 text-sm">
+            <SinoNotificacoes />
             <span>
               {usuario.nome} <span className="opacity-75">· {NOMES_PERFIL[usuario.perfil]}</span>
             </span>

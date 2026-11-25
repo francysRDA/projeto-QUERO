@@ -12,21 +12,6 @@ from tests.fabricas import SP, URL, payload
 
 
 
-@pytest.fixture
-def criar_edital(client, pr):
-    def _criar(publicar: bool = False, **kw) -> dict:
-        r = client.post(URL, json=payload(**kw), headers=pr[1])
-        assert r.status_code == 201, r.text
-        ed = r.json()
-        if publicar:
-            r = client.post(f"{URL}/{ed['id']}/publicar", headers=pr[1])
-            assert r.status_code == 200, r.text
-            ed = r.json()
-        return ed
-
-    return _criar
-
-
 def avancar_relogio(db, horas: float) -> None:
     db.execute(text("UPDATE relogio_dev SET segundos = segundos + :s WHERE id = 1"), {"s": int(horas * 3600)})
 

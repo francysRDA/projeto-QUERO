@@ -27,8 +27,10 @@ class ArmazenamentoDisco:
             raise ChaveInvalida(f"Chave fora do armazenamento: {chave!r}")
         return caminho
 
-    def put(self, chave: str, blocos: Iterable[bytes]) -> int:
+    def put(self, chave: str, blocos: Iterable[bytes], *, somente_leitura: bool = False) -> int:
         destino = self._caminho(chave)
+        if somente_leitura and destino.exists():
+            raise FileExistsError(f"Documento somente leitura já existe: {chave}")
         destino.parent.mkdir(parents=True, exist_ok=True)
         temporario = destino.with_name(f".{destino.name}.{uuid.uuid4().hex}.parcial")
         total = 0
@@ -40,6 +42,8 @@ class ArmazenamentoDisco:
                 f.flush()
                 os.fsync(f.fileno())
             os.replace(temporario, destino)  # rename atômico: nunca existe arquivo pela metade na chave
+            if somente_leitura:
+                os.chmod(destino, 0o444)
         except BaseException:
             temporario.unlink(missing_ok=True)
             raise

@@ -123,7 +123,7 @@ def download(arquivo_id: int, request: Request, db: DB, usuario: UsuarioAtual, a
     arq = svc.arquivo_para_download(db, arquivo_id, usuario, ip_cliente(request))
     return StreamingResponse(
         armaz.get(arq.chave),
-        media_type="application/pdf",
+        media_type=arq.content_type,
         headers={
             "Content-Disposition": f"attachment; filename*=UTF-8''{quote(arq.nome_original)}",
             "Content-Length": str(arq.tamanho_bytes),

@@ -12,8 +12,9 @@ TAMANHO_BLOCO = 64 * 1024  # §9.2 item 20: streaming em blocos de 64 KB
 
 
 class ArmazenamentoArquivos(Protocol):
-    def put(self, chave: str, blocos: Iterable[bytes]) -> int:
-        """Grava o conteúdo de forma atômica e devolve o total de bytes gravados."""
+    def put(self, chave: str, blocos: Iterable[bytes], *, somente_leitura: bool = False) -> int:
+        """Grava o conteúdo de forma atômica e devolve o total de bytes gravados.
+        `somente_leitura`: documentos oficiais (ata) não podem ser sobrescritos (HOM-02)."""
 
     def get(self, chave: str) -> Iterator[bytes]:
         """Lê o conteúdo em blocos."""

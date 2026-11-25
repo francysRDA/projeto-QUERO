@@ -417,8 +417,17 @@ def minhas(db: Session, estudante: Usuario) -> list[Inscricao]:
 # --- RN-15: download protegido -------------------------------------------------------------------------
 def arquivo_para_download(db: Session, arquivo_id: int, usuario: Usuario, ip: str | None) -> Arquivo:
     arq = db.get(Arquivo, arquivo_id)
-    if arq is None or arq.inscricao_id is None:
+    if arq is None:
         raise NaoEncontrado("Arquivo não encontrado.")
+    if arq.inscricao_id is None:
+        # HOM-02: ata e listas homologadas são públicas para usuários autenticados.
+        from app.services.homologacao_final import eh_documento_de_ata
+
+        if not eh_documento_de_ata(db, arq.id):
+            raise NaoEncontrado("Arquivo não encontrado.")
+        registrar(db, usuario_id=usuario.id, acao="ATA_DOWNLOAD", entidade="arquivo", entidade_id=arq.id, ip=ip)
+        db.commit()
+        return arq
     insc = db.get(Inscricao, arq.inscricao_id)
     if not pode_ver(db, insc, usuario):
         raise NaoEncontrado("Arquivo não encontrado.")

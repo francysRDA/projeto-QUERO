@@ -6,8 +6,9 @@ import { AuthProvider } from "./auth/AuthContext";
 import { RotaProtegida } from "./auth/RotaProtegida";
 import { Layout } from "./components/Layout";
 import "./index.css";
-import { EmConstrucao, Inicio } from "./pages/Inicio";
+import { Inicio } from "./pages/Inicio";
 import { Login } from "./pages/Login";
+import { Auditoria } from "./pages/gestao/Auditoria";
 import { EditalInscricao } from "./pages/estudante/EditalInscricao";
 import { MinhasInscricoes } from "./pages/estudante/MinhasInscricoes";
 import { Vitrine } from "./pages/estudante/Vitrine";
@@ -43,7 +44,7 @@ createRoot(document.getElementById("root")!).render(
                   <Route path="gestao/editais/novo" element={<FormEdital />} />
                   <Route path="gestao/editais/:id" element={<DetalheEdital />} />
                   <Route path="gestao/editais/:id/editar" element={<FormEdital />} />
-                  <Route path="auditoria" element={<EmConstrucao titulo="Auditoria" fatia={7} />} />
+                  <Route path="auditoria" element={<Auditoria />} />
                 </Route>
               </Route>
             </Route>

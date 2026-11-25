@@ -16,14 +16,3 @@ export function Inicio() {
     </section>
   );
 }
-
-export function EmConstrucao({ titulo, fatia }: { titulo: string; fatia: number }) {
-  return (
-    <section>
-      <h1 className="text-2xl font-bold">{titulo}</h1>
-      <p className="mt-2 rounded border border-dashed border-slate-300 bg-white p-6 text-slate-600">
-        Esta tela será entregue na Fatia {fatia} do plano de implementação.
-      </p>
-    </section>
-  );
-}

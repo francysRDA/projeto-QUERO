@@ -12,6 +12,7 @@ import {
   type StatusInscricao,
 } from "../../api/inscricoes";
 import { CamposDocumentos, arquivosValidos } from "../../components/CamposDocumentos";
+import { atasDoEdital, baixarAtaPdf } from "../../api/homologacao";
 import { RecursoDoEstudante } from "../../components/FormRecurso";
 import { COR_SITUACAO, NOME_SITUACAO } from "../../components/TabelaClassificacao";
 import { Botao, Cartao, ErroApiBox, StatusBadge, fmtDataHora } from "../../components/ui";
@@ -95,6 +96,7 @@ function CartaoInscricao({ inscricao: i }: { inscricao: Inscricao }) {
         </div>
       )}
       <RecursoDoEstudante inscricao={i} />
+      {i.edital.status === "ENCERRADO" && <AtaDoEdital editalId={i.edital.id} />}
       {i.status === "PENDENTE_VALIDACAO_VINCULO" && (
         <p className="mt-3 rounded border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
           O Sistema Acadêmico estava indisponível no envio. Sua inscrição está registrada e o vínculo será validado
@@ -181,5 +183,20 @@ function CartaoInscricao({ inscricao: i }: { inscricao: Inscricao }) {
         </div>
       )}
     </Cartao>
+  );
+}
+
+/** HOM-02: o resultado final homologado é visível aos candidatos. */
+function AtaDoEdital({ editalId }: { editalId: number }) {
+  const atas = useQuery({ queryKey: ["atas", editalId], queryFn: () => atasDoEdital(editalId) });
+  const baixar = useMutation({ mutationFn: (f: () => Promise<void>) => f() });
+  const ata = atas.data?.[0];
+  if (!ata) return null;
+  return (
+    <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
+      <span>Resultado final homologado em {fmtDataHora(ata.homologado_em)}.</span>
+      <button className="text-marca-700 underline" onClick={() => baixar.mutate(() => baixarAtaPdf(ata))}>Baixar ata (PDF)</button>
+      <ErroApiBox erro={baixar.error} />
+    </div>
   );
 }

@@ -37,7 +37,11 @@ cd ../frontend && npm install && npm run dev  # SPA em :5173 com proxy /api -> :
   (RN-09/RN-12) é a função pura `app/domain/classificacao.classificar` — nunca reimplemente em outro lugar.
 - `app/storage/` `ArmazenamentoArquivos` (put/get/delete/listar por chave), `ArmazenamentoDisco` e `validacao.receber_pdf`
   (64 KB por bloco, %PDF-, 10 MB, SHA-256). Nos testes, a fixture `armazenamento` usa um diretório temporário.
-- `app/reports/` PDFs gerados (comprovante de inscrição; ata na Fatia 7).
+- `app/reports/` documentos gerados: comprovante de inscrição e ata de homologação (PDF) + lista final (CSV).
+- `app/services/homologacao_final.py` homologação (classificação FINAL, ata e listas gravadas somente leitura) e
+  devolução para ajustes. `app/services/auditoria_consulta.py` consulta da trilha (sem escrita).
+- Imutabilidade no banco (triggers): `auditoria_logs`, `classificacoes` fase FINAL, `atas_homologacao` e os
+  arquivos referenciados pela ata.
 - `app/routers/dev.py` ferramentas de demonstração, registradas só com ENV=dev/test: relógio
   (`/api/v1/dev/relogio/*`) e queda simulada do Sistema Acadêmico (`PUT /api/v1/dev/academico`; o estado fica no
   arquivo `data/academico_fora_do_ar`, compartilhado entre API e worker).
@@ -80,4 +84,12 @@ RN-14 auditoria imutável · RN-15 documentos só para titular, comissão design
 - [x] Fatia 6 — interposição única na janela (com anexo PDF), julgamento com bloqueio do autor do parecer
   (RN-11) ou justificativa reforçada em comissão única, reavaliação e classificação POS_RECURSO, passagem
   automática para EM_HOMOLOGACAO_FINAL (`services/recursos.py`)
-- [ ] Fatia 7 — homologação final, ata, notificações, auditoria (HOM-01, 02, TRV-01, 03)
+- [x] Fatia 7 — homologação final com ata PDF + CSV imutáveis, devolução para ajustes, notificações no painel
+  (sino), consulta de auditoria por edital/inscrição
+
+## Pendências antes do piloto (fora do protótipo)
+- Revisão humana obrigatória (§14 item 28): classificação, RBAC/arquivos e auditoria.
+- Decisões pendentes do documento (§15, DP-01 a DP-09) e as lacunas L-01 a L-18 do `PLANO_PROTOTIPO.md`.
+- SSO real (DP-02), API do Sistema Acadêmico (DP-03), Nginx/TLS (com o limite da L-15), backup (RNF-09),
+  teste de carga de 300 usuários (RNF-01/02) e revisão WCAG 2.1 AA (RNF-08).
+- Retificação formal do resultado por nova ata vinculada (RN-13) — a tabela já tem `eh_retificacao`.

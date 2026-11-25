@@ -14,6 +14,7 @@ import {
 } from "../../api/editais";
 import { RelogioDemo } from "../../components/RelogioDemo";
 import { AvaliacaoEdital } from "./AvaliacaoEdital";
+import { HomologacaoFinal } from "./HomologacaoFinal";
 import { InscricoesEdital } from "./InscricoesEdital";
 import {
   Botao,
@@ -51,6 +52,9 @@ export function DetalheEdital() {
         <div className="mt-2 flex flex-wrap items-center gap-3">
           <h1 className="text-2xl font-bold">{e.titulo}</h1>
           <StatusBadge status={e.status} />
+          {e.status !== "RASCUNHO" && (
+            <Link to={`/auditoria?edital=${e.id}`} className="ml-auto text-sm text-marca-700 underline">Auditoria do edital</Link>
+          )}
         </div>
       </div>
 
@@ -134,6 +138,8 @@ export function DetalheEdital() {
           <p className="mt-1 whitespace-pre-line text-sm text-slate-700">{e.descricao}</p>
         </Cartao>
       </div>
+
+      <HomologacaoFinal edital={e} />
 
       <AvaliacaoEdital edital={e} />
 

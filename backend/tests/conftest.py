@@ -209,3 +209,32 @@ def cenario(client, db, criar_usuario, login, academico, edital, pr):
     transicoes_temporais(db)
     assert db.get(Edital, edital["id"]).status == "EM_AVALIACAO"
     return {"edital": edital, "a1": (a1, login(a1)), "a2": (a2, login(a2)), "cands": cands}
+
+
+@pytest.fixture
+def criar_edital(client, pr):
+    def _criar(publicar: bool = False, **kw) -> dict:
+        r = client.post(URL_EDITAIS, json=payload(**kw), headers=pr[1])
+        assert r.status_code == 201, r.text
+        ed = r.json()
+        if publicar:
+            r = client.post(f"{URL_EDITAIS}/{ed['id']}/publicar", headers=pr[1])
+            assert r.status_code == 200, r.text
+            ed = r.json()
+        return ed
+
+    return _criar
+
+
+@pytest.fixture
+def publicado(client, cenario):
+    """Resultado preliminar publicado. a1 avaliou todos: Caio 9,50 (1º), Bia 8,00 CR 9 (2º), Ana 8,00 CR 8 (3º).
+    Vagas = 2. Edital EM_RECURSO com janela de 48 h."""
+    for nome, nota in {"ana": "8.00", "bia": "8.00", "caio": "9.50"}.items():
+        r = client.put(f"{URL_INSC}/{cenario['cands'][nome][2]['id']}/avaliacao", headers=cenario["a1"][1],
+                       json={"acao": "CONFIRMAR", "nota_merito": nota, "parecer": "DEFERIDO",
+                             "declaracao_sem_impedimento": True})
+        assert r.status_code == 200
+    r = client.post(f"{URL_EDITAIS}/{cenario['edital']['id']}/resultado-preliminar", headers=cenario["a1"][1])
+    assert r.json()["status"] == "EM_RECURSO"
+    return cenario

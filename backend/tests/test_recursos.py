@@ -16,20 +16,6 @@ def iid(c, nome):
     return c["cands"][nome][2]["id"]
 
 
-@pytest.fixture
-def publicado(client, cenario):
-    """Resultado preliminar publicado. a1 avaliou todos: Caio 9,50 (1º), Bia 8,00 CR 9 (2º), Ana 8,00 CR 8 (3º).
-    Vagas = 2. Edital EM_RECURSO com janela de 48 h."""
-    for nome, nota in {"ana": "8.00", "bia": "8.00", "caio": "9.50"}.items():
-        r = client.put(f"{URL_INSC}/{iid(cenario, nome)}/avaliacao", headers=cenario["a1"][1],
-                       json={"acao": "CONFIRMAR", "nota_merito": nota, "parecer": "DEFERIDO",
-                             "declaracao_sem_impedimento": True})
-        assert r.status_code == 200
-    r = client.post(f"{URL_EDITAIS}/{cenario['edital']['id']}/resultado-preliminar", headers=cenario["a1"][1])
-    assert r.json()["status"] == "EM_RECURSO"
-    return cenario
-
-
 def recorrer(client, c, nome, texto="A nota não considerou meu relatório de monitoria anterior.", anexo=None,
              headers=None):
     files = {"anexo": anexo} if anexo else None
